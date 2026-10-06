@@ -4613,6 +4613,24 @@ describe('parseRemoteListing', () => {
       { name: 'origin', fetchUrl: 'git@github.com:owner/repo.git', pushUrl: 'git@github.com:owner/push.git' },
     ]);
   });
+
+  it('drops Git 2.54 partial-clone annotations after the listing kind (#4479)', () => {
+    // Git only annotates the fetch line in practice; push and repeated
+    // annotations are tolerated so the parser does not depend on that.
+    const listing = [
+      'origin\tgit@github.com:owner/repo.git (fetch) [blob:none]',
+      'origin\tgit@github.com:owner/repo.git (push)',
+      'mirror\thttps://example.com/repo.git (fetch) [blob:limit=1m] [tree:1]',
+      'mirror\thttps://example.com/repo.git (push) [blob:none]',
+      'bare\t',
+      '',
+    ].join('\n');
+    expect(parseRemoteListing(['bare', 'mirror', 'origin'], listing)).toEqual([
+      { name: 'bare', fetchUrl: 'bare', pushUrl: 'bare' },
+      { name: 'mirror', fetchUrl: 'https://example.com/repo.git', pushUrl: 'https://example.com/repo.git' },
+      { name: 'origin', fetchUrl: 'git@github.com:owner/repo.git', pushUrl: 'git@github.com:owner/repo.git' },
+    ]);
+  });
 });
 
 describe.runIf(canRunGit())('getRepositoryRemoteUrls', () => {
@@ -4635,6 +4653,22 @@ describe.runIf(canRunGit())('getRepositoryRemoteUrls', () => {
     expect(remotes).toEqual(expected);
     expect(remotes.find((remote) => remote.name === 'rewritten')?.fetchUrl).toBe('https://github.com/other/repo.git');
     expect(remotes.find((remote) => remote.name === 'origin')?.pushUrl).toBe('git@github.com:owner/push.git');
+  });
+
+  it('reads a partial-clone remote as `git remote get-url` reports it, without the 2.54 listing annotation (#4479)', async () => {
+    const repository = createTempDir();
+    runGit(repository, ['init', '-b', 'main']);
+    runGit(repository, ['remote', 'add', 'origin', 'git@github.com:owner/repo.git']);
+    // Git 2.54+ annotates the fetch line of `git remote -v` with the filter:
+    // `... (fetch) [blob:none]`. Setting just the config key is enough.
+    runGit(repository, ['config', 'remote.origin.partialclonefilter', 'blob:none']);
+
+    const [origin] = await getRepositoryRemoteUrls(repository);
+    expect(origin).toEqual({
+      name: 'origin',
+      fetchUrl: 'git@github.com:owner/repo.git',
+      pushUrl: 'git@github.com:owner/repo.git',
+    });
   });
 });
 
