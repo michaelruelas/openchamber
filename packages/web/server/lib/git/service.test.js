@@ -4614,19 +4614,23 @@ describe('parseRemoteListing', () => {
     ]);
   });
 
-  it('drops Git 2.54 partial-clone annotations after the listing kind (#4479)', () => {
-    // Git only annotates the fetch line in practice; push and repeated
-    // annotations are tolerated so the parser does not depend on that.
+  it('ignores decoration after the listing kind, recognized or not (#4479)', () => {
+    // Git only annotates the fetch line in practice; the parser ignores
+    // whatever follows the marker so it does not depend on the annotation's
+    // exact shape.
     const listing = [
       'origin\tgit@github.com:owner/repo.git (fetch) [blob:none]',
       'origin\tgit@github.com:owner/repo.git (push)',
       'mirror\thttps://example.com/repo.git (fetch) [blob:limit=1m] [tree:1]',
       'mirror\thttps://example.com/repo.git (push) [blob:none]',
+      'future\thttps://example.com/f.git (fetch) [blob:none] (extra)',
+      'future\thttps://example.com/f.git (push)',
       'bare\t',
       '',
     ].join('\n');
-    expect(parseRemoteListing(['bare', 'mirror', 'origin'], listing)).toEqual([
+    expect(parseRemoteListing(['bare', 'future', 'mirror', 'origin'], listing)).toEqual([
       { name: 'bare', fetchUrl: 'bare', pushUrl: 'bare' },
+      { name: 'future', fetchUrl: 'https://example.com/f.git', pushUrl: 'https://example.com/f.git' },
       { name: 'mirror', fetchUrl: 'https://example.com/repo.git', pushUrl: 'https://example.com/repo.git' },
       { name: 'origin', fetchUrl: 'git@github.com:owner/repo.git', pushUrl: 'git@github.com:owner/repo.git' },
     ]);

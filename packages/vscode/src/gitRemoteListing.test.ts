@@ -38,18 +38,40 @@ test('reads CRLF output as Git for Windows may print it, URLs with spaces includ
   ]);
 });
 
-test('drops Git 2.54 partial-clone annotations after the listing kind (#4479)', () => {
-  // Git only annotates the fetch line in practice; push and repeated
-  // annotations are tolerated so the parser does not depend on that.
+test('ignores decoration after the listing kind, recognized or not (#4479)', () => {
+  // Git only annotates the fetch line in practice; the parser ignores
+  // whatever follows the marker so it does not depend on the annotation's
+  // exact shape.
   const listing = [
     'origin\tgit@github.com:owner/repo.git (fetch) [blob:none]',
     'origin\tgit@github.com:owner/repo.git (push)',
     'mirror\thttps://example.com/repo.git (fetch) [blob:limit=1m] [tree:1]',
     'mirror\thttps://example.com/repo.git (push) [blob:none]',
+    'future\thttps://example.com/f.git (fetch) [blob:none] (extra)',
+    'future\thttps://example.com/f.git (push)',
   ].join('\n');
   assert.deepEqual(parseGitRemoteListing(listing), [
     { name: 'origin', fetchUrl: 'git@github.com:owner/repo.git', pushUrl: 'git@github.com:owner/repo.git' },
     { name: 'mirror', fetchUrl: 'https://example.com/repo.git', pushUrl: 'https://example.com/repo.git' },
+    { name: 'future', fetchUrl: 'https://example.com/f.git', pushUrl: 'https://example.com/f.git' },
+  ]);
+});
+
+test('reports URLs as `git remote get-url [--push]` does when lines are missing or repeated', () => {
+  // Shapes verified against git 2.54: a pushurl-only remote prints a bare
+  // name line for fetch and `get-url` answers with the remote's name; with
+  // several push URLs `get-url --push` reports the first.
+  const listing = [
+    'bare\t',
+    'pushonly\t/tmp/x/second.git (push)',
+    'multi\t/tmp/x/first.git (fetch)',
+    'multi\t/tmp/x/second.git (push)',
+    'multi\t/tmp/x/third.git (push)',
+  ].join('\n');
+  // `bare` has no URL and no URL kind, so it stays omitted, as before.
+  assert.deepEqual(parseGitRemoteListing(listing), [
+    { name: 'pushonly', fetchUrl: 'pushonly', pushUrl: '/tmp/x/second.git' },
+    { name: 'multi', fetchUrl: '/tmp/x/first.git', pushUrl: '/tmp/x/second.git' },
   ]);
 });
 
