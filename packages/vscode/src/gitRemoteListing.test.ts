@@ -22,6 +22,22 @@ test('parses fetch and push URLs per remote', () => {
   ]);
 });
 
+test('reads CRLF output as Git for Windows may print it, URLs with spaces included', () => {
+  const listing = [
+    'origin\tgit@github.com:owner/repo.git (fetch)',
+    'origin\tgit@github.com:owner/push.git (push)',
+    'mirror\thttps://example.com/a b.git (fetch)',
+    'mirror\thttps://example.com/a b.git (push)',
+    'bare\t',
+    '',
+  ].join('\r\n');
+  // A remote with no URL stays omitted, as before the extraction.
+  assert.deepEqual(parseGitRemoteListing(listing), [
+    { name: 'origin', fetchUrl: 'git@github.com:owner/repo.git', pushUrl: 'git@github.com:owner/push.git' },
+    { name: 'mirror', fetchUrl: 'https://example.com/a b.git', pushUrl: 'https://example.com/a b.git' },
+  ]);
+});
+
 test('drops Git 2.54 partial-clone annotations after the listing kind (#4479)', () => {
   // Git only annotates the fetch line in practice; push and repeated
   // annotations are tolerated so the parser does not depend on that.
