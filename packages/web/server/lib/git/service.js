@@ -1521,6 +1521,7 @@ export async function resolveWorktreeTopLevel(directory) {
   return { root: root || directory };
 }
 
+/** @public */
 export async function getCommitSummaries(directory, shas) {
   const commits = Array.isArray(shas)
     ? shas.map((sha) => String(sha || '').trim()).filter(Boolean)
@@ -1632,6 +1633,7 @@ const ensureLocalIntegrateBranch = async (repoRoot, candidate) => {
   return raw;
 };
 
+/** @public */
 export async function computeIntegratePlan(input = {}) {
   const repoRoot = normalizeIntegratePath(input.repoRoot, 'repoRoot');
   const sourceBranch = normalizeIntegrateBranch(input.sourceBranch, 'sourceBranch');
@@ -1685,6 +1687,7 @@ const maybeFastForwardIntegrateUpstream = async (tmpDir) => {
   }
 };
 
+/** @public */
 export async function getIntegrateConflictDetails(tmpDir) {
   const target = normalizeIntegratePath(tmpDir, 'tempWorktreePath');
   const [status, unmerged, diff, meta, patch] = await Promise.all([
@@ -1704,6 +1707,7 @@ export async function getIntegrateConflictDetails(tmpDir) {
   };
 }
 
+/** @public */
 export async function isCherryPickInProgress(tmpDir) {
   const target = normalizeIntegratePath(tmpDir, 'tempWorktreePath');
   const head = await runGitCommand(target, ['rev-parse', '--verify', '--quiet', 'CHERRY_PICK_HEAD']);
@@ -1755,6 +1759,7 @@ const normalizeIntegrateState = (state = {}) => ({
   currentCommit: normalizeIntegrateSha(state.currentCommit),
 });
 
+/** @public */
 export async function integrateWorktreeCommits(inputPlan = {}) {
   const plan = await normalizeIntegratePlan(inputPlan);
   if (plan.commits.length === 0) {
@@ -1818,6 +1823,7 @@ export async function integrateWorktreeCommits(inputPlan = {}) {
   }
 }
 
+/** @public */
 export async function abortIntegrate(stateInput = {}) {
   const state = normalizeIntegrateState(stateInput);
   await runGitCommand(state.tempWorktreePath, ['cherry-pick', '--abort']).catch(() => undefined);
@@ -1825,6 +1831,7 @@ export async function abortIntegrate(stateInput = {}) {
   return { success: true };
 }
 
+/** @public */
 export async function continueIntegrate(stateInput = {}) {
   const state = normalizeIntegrateState(stateInput);
   const cont = await runGitCommand(state.tempWorktreePath, ['cherry-pick', '--continue']);
@@ -3958,7 +3965,7 @@ export async function applyHunk(directory, filePath, options = {}) {
   });
 }
 
-export async function collectDiffs(directory, files = []) {
+async function collectDiffs(directory, files = []) {
   const results = [];
   for (const filePath of files) {
     try {
@@ -3973,6 +3980,7 @@ export async function collectDiffs(directory, files = []) {
   return results;
 }
 
+/** @public */
 export async function listStashes(directory) {
   const { git } = await createRepositoryGitContext(directory);
   const output = await git.raw(['stash', 'list', '--format=%gd%x1f%gs%x1f%cr%x1f%H']);
@@ -3987,6 +3995,7 @@ export async function listStashes(directory) {
     .filter((entry) => entry.ref);
 }
 
+/** @public */
 export async function countStashFiles(directory, refs = []) {
   const { git } = await createRepositoryGitContext(directory);
   const uniqueRefs = Array.from(new Set((Array.isArray(refs) ? refs : []).map((ref) => String(ref || '').trim()).filter(Boolean)));
@@ -4010,6 +4019,7 @@ export async function countStashFiles(directory, refs = []) {
   await Promise.all(Array.from({ length: Math.min(concurrency, uniqueRefs.length) }, () => worker()));
   return counts;
 }
+/** @public */
 export async function stashPush(directory, options = {}) {
   const { git } = await createRepositoryGitContext(directory);
   const message = typeof options.message === 'string' && options.message.trim()
@@ -4024,6 +4034,7 @@ export async function stashPush(directory, options = {}) {
   };
 }
 
+/** @public */
 export async function stashApply(directory, options = {}) {
   const { git } = await createRepositoryGitContext(directory);
   const ref = typeof options.ref === 'string' && options.ref.trim() ? options.ref.trim() : 'stash@{0}';
@@ -4036,6 +4047,7 @@ export async function stashApply(directory, options = {}) {
   return { success: true, ref };
 }
 
+/** @public */
 export async function stashDrop(directory, options = {}) {
   const { git } = await createRepositoryGitContext(directory);
   const ref = typeof options.ref === 'string' && options.ref.trim() ? options.ref.trim() : 'stash@{0}';
@@ -4043,6 +4055,7 @@ export async function stashDrop(directory, options = {}) {
   return { success: true, ref };
 }
 
+/** @public */
 export async function stashPop(directory, options = {}) {
   const ref = typeof options.ref === 'string' && options.ref.trim() ? options.ref.trim() : 'stash@{0}';
   await stashApply(directory, { ref });
@@ -4050,7 +4063,7 @@ export async function stashPop(directory, options = {}) {
   return { success: true, ref };
 }
 
-export async function stageFile(directory, filePath) {
+async function stageFile(directory, filePath) {
   await stageFiles(directory, [filePath]);
 }
 
@@ -4098,7 +4111,7 @@ export async function stageFiles(directory, paths) {
   });
 }
 
-export async function unstageFile(directory, filePath) {
+async function unstageFile(directory, filePath) {
   await unstageFiles(directory, [filePath]);
 }
 
@@ -4434,6 +4447,7 @@ async function filterActiveRemoteBranches(git, directory, remoteBranches) {
   }
 }
 
+/** @public */
 export async function createBranch(directory, branchName, options = {}) {
   const { git } = await createRepositoryGitContext(directory);
 
@@ -5954,6 +5968,7 @@ export async function snapshotWorktree(directory, input = {}) {
   }
 }
 
+/** @public */
 export async function deleteBranch(directory, branch, options = {}) {
   const { git } = await createRepositoryGitContext(directory);
 
@@ -6176,6 +6191,7 @@ export async function getLog(directory, options = {}) {
   }
 }
 
+/** @public */
 export async function isLinkedWorktree(directory) {
   const git = await createGit(directory);
   try {
@@ -6190,6 +6206,7 @@ export async function isLinkedWorktree(directory) {
   }
 }
 
+/** @public */
 export async function validateWorktreeDirectory(directory, worktreeRoot) {
   const directoryPath = normalizeDirectoryPath(directory);
   const rootPath = normalizeDirectoryPath(worktreeRoot);
@@ -6226,6 +6243,7 @@ export async function validateWorktreeDirectory(directory, worktreeRoot) {
   };
 }
 
+/** @public */
 export async function canonicalizeWorktreeState(directory) {
   const directoryPath = normalizeDirectoryPath(directory);
 
@@ -6387,6 +6405,7 @@ export async function getCommitFiles(directory, commitHash) {
   return { files };
 }
 
+/** @public */
 export async function renameBranch(directory, oldName, newName) {
   const { git, repoRoot } = await createRepositoryGitContext(directory);
 
@@ -6403,8 +6422,29 @@ export async function renameBranch(directory, oldName, newName) {
       .then((value) => String(value || '').trim())
       .catch(() => '');
 
-    // Use git branch -m command to rename the branch
+    // git refuses a taken name with a bare "already exists"; say where the
+    // name is in use so a worktree rename that collides is understandable.
+    const worktrees = await listWorktreeEntries(repoRoot).catch(() => []);
+    const takenBy = worktrees.find((entry) => entry.branch === normalizedNewName);
+    if (takenBy) {
+      const error = new Error(`Branch ${normalizedNewName} is already checked out in ${takenBy.worktree}`);
+      error.statusCode = 409;
+      throw error;
+    }
+    const existing = await runGitCommand(repoRoot, ['show-ref', '--verify', '--quiet', `refs/heads/${normalizedNewName}`]);
+    if (existing.success) {
+      const error = new Error(`A branch named ${normalizedNewName} already exists`);
+      error.statusCode = 409;
+      throw error;
+    }
+
     await git.raw(['branch', '-m', oldName, newName]);
+
+    // A worktree's branch lives in a file the topology watcher does not see,
+    // so tell the sidebar directly when the renamed branch is checked out.
+    if (worktrees.some((entry) => entry.branch === normalizedOldName)) {
+      await publishWorktreeTopologyChange(repoRoot);
+    }
 
     if (previousRemote && previousMerge && normalizedNewName) {
       const previousMergeBranch = cleanBranchName(previousMerge);
@@ -6429,7 +6469,7 @@ export async function renameBranch(directory, oldName, newName) {
 
     return { success: true, branch: newName };
   } catch (error) {
-    console.error('Failed to rename branch:', error);
+    if (error.statusCode !== 409) console.error('Failed to rename branch:', error);
     throw error;
   }
 }
@@ -6510,6 +6550,7 @@ export async function rebase(directory, options = {}) {
   }
 }
 
+/** @public */
 export async function abortRebase(directory) {
   const { git } = await createRepositoryGitContext(directory);
 
@@ -6558,6 +6599,7 @@ export async function merge(directory, options = {}) {
   }
 }
 
+/** @public */
 export async function abortMerge(directory) {
   const { git } = await createRepositoryGitContext(directory);
 
@@ -6715,6 +6757,7 @@ export async function getConflictDetails(directory) {
   }
 }
 
+/** @public */
 export async function getCommitFileDiff(directory, hash, filePath, isBinary) {
   if (!directory || !hash || !filePath) {
     throw new Error('directory, hash, and path are required for getCommitFileDiff');
